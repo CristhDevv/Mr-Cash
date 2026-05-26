@@ -195,20 +195,19 @@ export default function HogarPage() {
     if (!user) return
 
     try {
-      // 1. Create household
-      const { data: newHogar, error: hogarError } = await supabase
+      // 1. Generate UUID on client and create household
+      const newHogarId = crypto.randomUUID()
+      const { error: hogarError } = await supabase
         .from('hogares')
-        .insert({ nombre: formHogarNombre, creado_por: user.id })
-        .select()
-        .single()
+        .insert({ id: newHogarId, nombre: formHogarNombre, creado_por: user.id })
 
-      if (hogarError || !newHogar) throw new Error('Error al crear el hogar')
+      if (hogarError) throw new Error('Error al crear el hogar')
 
       // 2. Add creator as admin member
       const { error: memberError } = await supabase
         .from('hogar_miembros')
         .insert({
-          hogar_id: newHogar.id,
+          hogar_id: newHogarId,
           user_id: user.id,
           rol: 'admin',
           estado: 'activo'
@@ -219,7 +218,7 @@ export default function HogarPage() {
       // 3. Update profile
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ hogar_id: newHogar.id })
+        .update({ hogar_id: newHogarId })
         .eq('id', user.id)
 
       if (profileError) throw new Error('Error al asociar el perfil')
